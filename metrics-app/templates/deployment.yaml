@@ -1,0 +1,14 @@
+# Inside containers spec in templates/deployment.yaml
+containers:
+  - name: {{ .Chart.Name }}
+    # ... other container settings
+    ports:
+      - containerPort: 8080 # The app runs on 8080
+        name: http
+        protocol: TCP
+    env:
+      - name: PASSWORD
+        valueFrom:
+          secretKeyRef:
+            name: {{ include "metrics-app.fullname" . }}-secret # Name of the secret resource
+            key: PASSWORD # Key within the secret
