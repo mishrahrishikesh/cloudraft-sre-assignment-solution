@@ -1,0 +1,77 @@
+# metrics-app/templates/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "metrics-app.fullname" . }}
+  labels:
+    {{- include "metrics-app.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "metrics-app.selectorLabels" . | nindent 8 }}
+  strategy:
+    {{- toYaml .Values.strategy | nindent 4 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "metrics-app.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: backend
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "metrics-app.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          env:
+            - name: PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "metrics-app.fullname" . }}-secret # Refers to the Secret resource named by the chart's full name
+                  key: PASSWORD # Refers to the key 'PASSWORD' inside that Secret
+
+          livenessProbe:
+            httpGet:
+              path: {{ default "/" .Values.livenessProbe.path }} # Adjust path if needed, e.g. /counter
+              port: http
+            initialDelaySeconds: {{ default 10 .Values.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ default 10 .Values.livenessProbe.periodSeconds }}
+          readinessProbe:
+            httpGet:
+              path: {{ default "/" .Values.readinessProbe.path }} # Adjust path if needed, e.g. /counter
+              port: http
+            initialDelaySeconds: {{ default 5 .Values.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ default 5 .Values.readinessProbe.periodSeconds }}
+
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

@@ -1,0 +1,21 @@
+# metrics-app/values.yaml
+replicaCount: 1 # Start with 1 for initial testing
+image:
+  repository: ghcr.io/cloudraftio/metrics-app
+  pullPolicy: IfNotPresent
+  tag: "1.1"
+
+service:
+  type: ClusterIP
+  port: 80 # Service port for Ingress
+  targetPort: 8080 # Container port
+
+secretPassword: "MYPASSWORD" # Value for the password secret
+
+ingress:
+  enabled: true
+  className: "nginx"
+  path: "/counter"
+  pathType: Prefix
+
+# You can clean up or leave other default values as is for now
