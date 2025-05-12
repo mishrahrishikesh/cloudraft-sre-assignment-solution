@@ -1,0 +1,33 @@
+# argocd/metrics-app-app.yaml
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: metrics-app
+  namespace: argocd # Or a different namespace where you install ArgoCD apps
+spec:
+  project: default # Or create a dedicated project
+
+  source:
+    repoURL: <Your Git Repository URL> # e.g., https://github.com/yourusername/your-repo.git
+    targetRevision: HEAD # Or a specific branch/tag like 'main' or 'v1.0'
+    path: metrics-app # The directory within your repo containing the Helm chart
+
+  destination:
+    server: https://kubernetes.default.svc # This is the default for in-cluster
+    namespace: metrics-app # The namespace where the app should be deployed
+
+  syncPolicy:
+    automated:
+      prune: true # Delete resources that are no longer in Git
+      selfHeal: true # Sync automatically if drift is detected
+    syncOptions:
+      - CreateNamespace=true # Automatically create the destination namespace if it doesn't exist
+
+  chart: metrics-app # The name of the chart (directory name)
+  helm:
+    values: | # Optional: override Helm values here if needed, e.g., replicaCount
+      image:
+        tag: "1.1"
+      secretPassword: "MYPASSWORD" # Pass the secret value via values for the secret template
+      # service:
+      #   type: LoadBalancer # If you configured MetalLB or similar
